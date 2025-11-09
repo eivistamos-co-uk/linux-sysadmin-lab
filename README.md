@@ -7,7 +7,6 @@ Single-instance Linux 2023 6.1 EC2 lab demonstrating troubleshooting and automat
 - AWS EC2 t2.micro instance
 - Security Group: SSH 22, HTTP 80
 
-architecture-diagram PLACEHOLDER
 ![architecture-diagram](infrastructure/linux-sysadmin-lab-architecture.png)
 
 ## CloudFormation Deployment
