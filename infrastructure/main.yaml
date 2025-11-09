@@ -1,0 +1,151 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  The main stack for orchestrating AWS networking components for Linux server troubleshooting practice.
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: linux-sysadmin-lab
+  AvailabilityZone:
+    Type: String
+    Default: eu-west-2a
+  ServerOS:
+    Type: String
+    Default: linux-server
+  PersonalIPAddress:
+    Description: Find on whatsmyip.com (append /32 for single IP)
+    Type: String
+  ImageID:
+    Type: AWS::EC2::Image::Id
+    Description: Default here is Amazon Linux 2023 6.1
+    Default: ami-075599e9cc6e3190d
+  KeyPairName:
+    Description: Create Key Pair before deployment and specify here
+    Type: AWS::EC2::KeyPair::KeyName
+
+Resources:
+
+  #------------------
+  # Network Components
+  #------------------
+
+  VirtualPrivateCloud:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/28
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value: !Sub "${ProjectName}-vpc"
+
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VirtualPrivateCloud
+      AvailabilityZone: !Ref AvailabilityZone
+      CidrBlock: 10.0.0.0/28
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub "${ProjectName}-subnet-${AvailabilityZone}"
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub "${ProjectName}-igw"
+
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VirtualPrivateCloud
+
+  RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VirtualPrivateCloud
+      Tags:
+        - Key: Name
+          Value: !Sub "${ProjectName}-vpc-rtb-public"
+
+  Route:
+    Type: AWS::EC2::Route
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref RouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref RouteTable
+      SubnetId: !Ref PublicSubnet
+
+  #------------------
+  # Instance Components
+  #------------------
+
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allows access from personal computer
+      GroupName: !Sub "${ServerOS}-os"
+      VpcId: !Ref VirtualPrivateCloud
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref PersonalIPAddress
+          Description: SSH access via personal laptop
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: !Ref PersonalIPAddress
+          Description: HTTP access via personal laptop
+
+  Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref ImageID
+      InstanceType: t2.micro
+      KeyName: !Ref KeyPairName
+      SubnetId: !Ref PublicSubnet
+      SecurityGroupIds:
+        - !Ref SecurityGroup
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            Encrypted: false
+            DeleteOnTermination: true
+            Iops: 3000
+            VolumeSize: 8
+            VolumeType: gp3
+      CreditSpecification:
+        CPUCredits: standard
+      MetadataOptions:
+        HttpEndpoint: enabled
+        HttpPutResponseHopLimit: 2
+        HttpTokens: required
+      PrivateDnsNameOptions:
+        EnableResourceNameDnsAAAARecord: false
+        EnableResourceNameDnsARecord: false
+        HostnameType: ip-name
+      Tags:
+        - Key: Name
+          Value: !Ref ServerOS
+
+Outputs:
+  VPCId:
+    Description: Deployed VPC ID
+    Value: !Ref VirtualPrivateCloud
+  PublicSubnetId:
+    Description: Deployed public subnet ID
+    Value: !Ref PublicSubnet
+  InstanceId:
+    Description: Deployed instance ID
+    Value: !Ref Instance
