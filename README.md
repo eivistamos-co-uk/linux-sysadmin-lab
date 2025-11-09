@@ -55,7 +55,9 @@ sudo systemctl enable httpd
 **Verification:** system responsive, swap active  
 
 ## Automation
-WIP PLACEHOLDER
+WIP
+- Disk usage checker (to be tested).
+- Memory usage checker (to be created).
 
 ### Optional scheduled scripts for hourly checks:
 WIP PLACEHOLDER
@@ -68,6 +70,6 @@ WIP PLACEHOLDER
 - CloudFormation Templating & Deployment  
 
 ## Next Steps
-- Automation/Scripts
+- Automation/Scripts/Testing
 - CloudWatch monitoring
 - SNS alerting
