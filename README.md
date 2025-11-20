@@ -1,7 +1,7 @@
 # Linux SysAdmin Lab (AWS EC2)
 
 ## Overview
-Single-instance Linux 2023 6.1 EC2 lab demonstrating troubleshooting and automation.
+I used a local virtualised Ubuntu machine for learning [(notes)](/learning), and then a single Linux 2023 6.1 EC2 instance for troubleshooting & automation.
 
 ## Architecture
 - AWS EC2 t2.micro instance
